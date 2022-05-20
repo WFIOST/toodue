@@ -17,7 +17,7 @@ namespace tudu
 			if (!Directory.Exists(DataLoc))
 				Directory.CreateDirectory(DataLoc);
 			if (!File.Exists(Path.Combine(DataLoc, "todo.txt")))
-				File.Create(Path.Combine(DataLoc, "todo.txt"));
+				File.Create(Path.Combine(DataLoc, "todo.txt")).Close();
 			yaml.LoadTodoFile();
 
 			Parser.Default.ParseArguments<RemTask, NewTask, TaskInfo, SlashTasks, ListTasks>(args)
@@ -39,7 +39,7 @@ namespace tudu
 		public void Execute()
 		{
 			Console.WriteLine($"Removing {ID}");
-			yaml.RemoveTask(int.Parse(ID));
+			Task.RemoveTask(int.Parse(ID));
 		}
 	}
 
@@ -52,7 +52,7 @@ namespace tudu
 		public void Execute()
 		{
 			Console.WriteLine($"Slashing {ID}");
-			yaml.SlashTask(int.Parse(ID));
+			Task.SlashTask(int.Parse(ID));
 		}
 	}
 
@@ -64,7 +64,7 @@ namespace tudu
 
 		public void Execute()
 		{
-			Task task = yaml.GetTask(ID);
+			Task task = Task.GetTask(ID);
 			if(task.IsSlashed)
 				Console.WriteLine($"--{task.Name}--");
 			else
@@ -127,7 +127,7 @@ namespace tudu
 			var task = new Task();
 			task.Name = Name;
 			task.Body = Message;
-			yaml.AddTask(task, ParentTask);
+			Task.AddTask(task, ParentTask);
 		}
 	}
 }
