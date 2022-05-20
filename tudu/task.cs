@@ -45,26 +45,42 @@ public class Task
 		yaml.SaveTodoFile();
 	}
 
-	public static Task GetTask(string ID)
+	public static Task GetTask(string pos, bool getParent = false)
 	{
-		int id = int.Parse(ID);
-		return yaml.TaskList.Tasks[id];
+		int[] loc = StringToIntArray(pos);
+		Task t = yaml.TaskList.Tasks[loc[0]];
+		for (int i = 1; i < loc.Length; i++)
+		{
+			if (getParent && i == loc.Length - 1)
+				break;
+			t = t.SubTasks[loc[i]];
+		}
+		return t;
 	}
 
-	public static void SlashTask(int index)
+	public static void SlashTask(string pos)
 	{
-		if (yaml.TaskList.Tasks[index].IsSlashed)
-		{
-			Console.WriteLine("Item is already slashed!");
-			return;
-		}
-		yaml.TaskList.Tasks[index].IsSlashed = true;
+		Task t = GetTask(pos);
+		if (t.IsSlashed)
+			return; 
+		t.IsSlashed = true;
 		yaml.SaveTodoFile();
 	}
 
-	public static void RemoveTask(int index)
+	public static void UnslashTask(string pos)
 	{
-		yaml.TaskList.Tasks.RemoveAt(index);
+		Task t = GetTask(pos);
+		if (!t.IsSlashed)
+			return;
+		t.IsSlashed = false;
+		yaml.SaveTodoFile();
+	}
+
+	public static void RemoveTask(string pos)
+	{
+		int index = StringToIntArray(pos)[-1];
+		Task t = GetTask(pos, true);
+		t.SubTasks.RemoveAt(index);
 		yaml.SaveTodoFile();
 	}
 }

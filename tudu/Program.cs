@@ -20,15 +20,12 @@ namespace tudu
 				File.Create(Path.Combine(DataLoc, "todo.txt")).Close();
 			yaml.LoadTodoFile();
 
-			Parser.Default.ParseArguments<RemTask, NewTask, TaskInfo, SlashTasks, ListTasks>(args)
+			Parser.Default.ParseArguments<RemTask, NewTask, TaskInfo, SlashTask, ListTasks>(args)
 				.WithParsed<ICommand>(t => t.Execute());
 		}
 	}
 
-	public interface ICommand
-	{
-		void Execute();
-	}
+	public interface ICommand { void Execute(); }
 
 	[Verb("rem", HelpText = "Remove todo item.")]
 	public class RemTask : ICommand
@@ -39,12 +36,12 @@ namespace tudu
 		public void Execute()
 		{
 			Console.WriteLine($"Removing {ID}");
-			Task.RemoveTask(int.Parse(ID));
+			Task.RemoveTask(ID);
 		}
 	}
 
 	[Verb("slash", HelpText = "Mark todo item as finished.")]
-	public class SlashTasks : ICommand
+	public class SlashTask : ICommand
 	{
 		[Option('i', "id", Required = true, HelpText = "Todo item to slash.")]
 		public string ID { get; set; }
@@ -52,7 +49,7 @@ namespace tudu
 		public void Execute()
 		{
 			Console.WriteLine($"Slashing {ID}");
-			Task.SlashTask(int.Parse(ID));
+			Task.SlashTask(ID);
 		}
 	}
 
