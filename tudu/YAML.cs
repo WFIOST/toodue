@@ -3,7 +3,7 @@ using YamlDotNet.Serialization.NamingConventions;
 
 namespace tudu;
 
-public static class yaml
+public static class YAML
 {
 	public static ISerializer serializer = new SerializerBuilder()
 		.WithNamingConvention(CamelCaseNamingConvention.Instance)

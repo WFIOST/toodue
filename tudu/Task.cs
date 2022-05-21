@@ -27,7 +27,7 @@ public class Task
 		if (parent != null)
 		{
 			int[] p = StringToIntArray(parent);
-			Task t = yaml.TaskList.Tasks[p[0]];
+			Task t = YAML.TaskList.Tasks[p[0]];
 			for (int i = 1; i < p.Length; i++)
 			{
 				if (p[i] >= t.SubTasks.Count)
@@ -41,14 +41,14 @@ public class Task
 			t.SubTasks.Add(item);
 		}
 		else
-			yaml.TaskList.Tasks.Add(item);
-		yaml.SaveTodoFile();
+			YAML.TaskList.Tasks.Add(item);
+		YAML.SaveTodoFile();
 	}
 
 	public static Task GetTask(string pos, bool getParent = false)
 	{
 		int[] loc = StringToIntArray(pos);
-		Task t = yaml.TaskList.Tasks[loc[0]];
+		Task t = YAML.TaskList.Tasks[loc[0]];
 		for (int i = 1; i < loc.Length; i++)
 		{
 			if (getParent && i == loc.Length - 1)
@@ -64,7 +64,7 @@ public class Task
 		if (t.IsSlashed)
 			return; 
 		t.IsSlashed = true;
-		yaml.SaveTodoFile();
+		YAML.SaveTodoFile();
 	}
 
 	public static void UnslashTask(string pos)
@@ -73,7 +73,7 @@ public class Task
 		if (!t.IsSlashed)
 			return;
 		t.IsSlashed = false;
-		yaml.SaveTodoFile();
+		YAML.SaveTodoFile();
 	}
 
 	public static void RemoveTask(string pos)
@@ -81,6 +81,6 @@ public class Task
 		int index = StringToIntArray(pos)[-1];
 		Task t = GetTask(pos, true);
 		t.SubTasks.RemoveAt(index);
-		yaml.SaveTodoFile();
+		YAML.SaveTodoFile();
 	}
 }

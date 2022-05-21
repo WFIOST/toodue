@@ -6,7 +6,7 @@ namespace tudu
 {
 	internal class Program
 	{
-		public static string AppName = "tudu";
+		public static string AppName = "toodue";
 
 		public static string DataLoc =
 			Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), AppName);
@@ -18,7 +18,7 @@ namespace tudu
 				Directory.CreateDirectory(DataLoc);
 			if (!File.Exists(Path.Combine(DataLoc, "todo.txt")))
 				File.Create(Path.Combine(DataLoc, "todo.txt")).Close();
-			yaml.LoadTodoFile();
+			YAML.LoadTodoFile();
 
 			Parser.Default.ParseArguments<RemTask, NewTask, TaskInfo, SlashTask, ListTasks>(args)
 				.WithParsed<ICommand>(t => t.Execute());
@@ -79,14 +79,16 @@ namespace tudu
 	{
 		public void Execute()
 		{
-			for (int i = 0; i < yaml.TaskList.Tasks.Count; i++)
+			string list = "";
+			for (int i = 0; i < YAML.TaskList.Tasks.Count; i++)
 			{
 				char s = ' ';
-				if (yaml.TaskList.Tasks[i].IsSlashed) s = '-';
-				Console.Write($"{i}: {yaml.TaskList.Tasks[i].Name} {s}\n");
-				string? sti = GetSubTaskInfo(yaml.TaskList.Tasks[i], i.ToString(), 1);
-				if(sti != null) Console.Write(sti);
+				if (YAML.TaskList.Tasks[i].IsSlashed) s = '-';
+				list += $"{i}: {YAML.TaskList.Tasks[i].Name} {s}\n";
+				string? sti = GetSubTaskInfo(YAML.TaskList.Tasks[i], i.ToString(), 1);
+				if (sti != null) list += sti;
 			}
+			Console.WriteLine(list);
 		}
 
 		public static string? GetSubTaskInfo(Task toptask, string parent, int depth)
