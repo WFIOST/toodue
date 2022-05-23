@@ -13,7 +13,8 @@ namespace tudu;
 
 public class Sync
 {
-	public class OneDrive
+	//TODO: Figure this out.
+	public static class OneDrive
 	{
 		public static string   AppID     = "24a8a6c0-f6ed-4c6f-84e3-162d411daa8a";
 		public static string[] Scope     = new string[]{"onedrive.readwrite"};
@@ -24,7 +25,8 @@ public class Sync
 			var Auth = new MsaAuthenticationProvider(AppID, ReturnURL, Scope);
 		}
 	}
-
+	
+	//High props to Dropbox. Their docs on the API is absolute top notch, unlike a certain singular drive.
 	public static class DropBox
 	{
 		public static          string AccessToken = "";
@@ -35,26 +37,31 @@ public class Sync
 		public static readonly Uri RedirectURI = new Uri(Loopback + "authorize");
 		public static readonly Uri JSRedirectURI = new Uri(Loopback + "token");
 
-		public static void r()
+		public static readonly string AuthURL  = "www.dropbox.com/oauth2/authorize";
+		public static readonly string TokenURL = "https://api.dropboxapi.com/oauth2/token";
+
+		public static void Sync()
 		{
+			string tokenResponseJson = Authenticate(AuthURL, TokenURL, ClientID);
+			OAuth2Response? tokenResponse = JsonConvert.DeserializeObject<OAuth2Response>(tokenResponseJson);
+			//hope tokenresponse isnt null
+			AccessToken = tokenResponse.access_token;
 			using (var dbx = new DropboxClient(AccessToken))
 			{
-				var list = dbx.Files.ListFolderAsync(string.Empty);
-				list.Wait();
-				Metadata? todofile = null;
-				if (list.Result.Entries.Where(i => i.Name == "todo.txt").Count() != 0)
-					todofile = list.Result.Entries.First(i => i.Name == "todo.txt");
-				FileInfo TodoFileInfo = new FileInfo(YAML.TODO_FILE);
+				var list = dbx.Files.ListFolderAsync(string.Empty).Result;
+				Metadata? todoFile = list.Entries.FirstOrDefault(i => i.Name == "todo.txt"); //Server todo.txt
+				FileInfo todoFileInfo = new FileInfo(YAML.TODO_FILE); //Client todo.txt
 				
-				//TODO: DONT DO THIS JFC
+				//TODO: PLEASE don't do this. Try to figure out a logging and desync fixer system.
+				//	I'm pretty sure any newer device will upload because the freshly made todo file is considered newer
+				
 				//If the server version is OLDER than ours
-				if (todofile == null || DateTime.Compare(todofile.AsFile.ServerModified, TodoFileInfo.LastWriteTime) < 0)
+				if (todoFile == null || DateTime.Compare(todoFile.AsFile.ServerModified, todoFileInfo.LastWriteTime) < 0)
 				{
 					Console.WriteLine("Uploading to server!");
 					using (var mem = new MemoryStream(File.ReadAllBytes(YAML.TODO_FILE)))
 					{
-						var upload = dbx.Files.UploadAsync("/todo.txt", WriteMode.Overwrite.Instance, body: mem);
-						upload.Wait();
+						dbx.Files.UploadAsync("/todo.txt", WriteMode.Overwrite.Instance, body: mem);
 					}
 				}
 				else //If the sever version is NEWER than ours
@@ -63,51 +70,36 @@ public class Sync
 					using (var response = dbx.Files.DownloadAsync("/todo.txt"))
 					{
 						response.Wait();
-						var f = response.Result.GetContentAsByteArrayAsync();
-						f.Wait();
-						var r = f.Result;
-						File.WriteAllBytes(YAML.TODO_FILE, r);
+						var downloadResult = response.Result.GetContentAsByteArrayAsync().Result;
+						File.WriteAllBytes(YAML.TODO_FILE, downloadResult);
 					}
-				}
-
-				foreach (var item in list.Result.Entries.Where(i => i.IsFolder))
-				{
-					Console.WriteLine("D   {0}/", item.Name);
-				}
-				
-				foreach (var item in list.Result.Entries.Where(i => i.IsFile))
-				{
-					Console.WriteLine("F{0,8} {1}/", item.AsFile.Size, item.Name);
 				}
 			}
 		}
-
-		public static void OAuth2()
+	}
+	
+	//TODO: support reauthorizing token.
+	public static string Authenticate(string authUrl, string tokenUrl, string clientId)
+	{
+		var pkce = new Pkce();
+		string URL =
+			"https://" + authUrl + "?client_id=" + clientId + "&response_type=code&code_challenge=" + pkce.CodeChallenge + "&code_challenge_method=S256";
+		//TODO: Launch browser automatically and get response automatically.
+		Console.WriteLine("Please insert the following into your URL: " + URL + "\nAnd insert back the code: ");
+		var AuthToken = Console.ReadLine();
+		//TODO: Make this static.
+		HttpClient client = new HttpClient();
+		var postreq = new Dictionary<string, string>()
 		{
-			var pkce = new Pkce();
-			string URL =
-				"https://www.dropbox.com/oauth2/authorize?client_id=" + ClientID + "&response_type=code&code_challenge=" + pkce.CodeChallenge + "&code_challenge_method=S256";
-			Console.WriteLine("Please insert the following into your URL: " + URL + "\nAnd insert back the code: ");
-			var auth = Console.ReadLine();
-			
-			
-			//TODO: Make this static.
-			HttpClient client = new HttpClient();
-			var postreq =
-				new Dictionary<string, string>()
-				{
-					{ "code", auth},
-					{ "grant_type", "authorization_code"},
-					{ "code_verifier", pkce.CodeVerifier },
-					{ "client_id", ClientID},
-				};
-			var content = new FormUrlEncodedContent(postreq);
-			var response = client.PostAsync("https://api.dropboxapi.com/oauth2/token", content).Result;
-			var responseString = response.Content.ReadAsStringAsync().Result;
-			Console.WriteLine(responseString);
-			var oa2rep = JsonConvert.DeserializeObject<OAuth2Response>(responseString);
-			AccessToken = oa2rep.access_token;
-		}
+			{ "code", AuthToken },
+			{ "grant_type", "authorization_code" },
+			{ "code_verifier", pkce.CodeVerifier },
+			{ "client_id", clientId },
+		};
+		var content = new FormUrlEncodedContent(postreq);
+		var response = client.PostAsync(tokenUrl, content).Result;
+		string responseString = response.Content.ReadAsStringAsync().Result;
+		return responseString;
 	}
 }
 
@@ -130,11 +122,13 @@ public class Pkce
     /// Initializes a new instance of the Pkce class.
     /// </summary>
     /// <param name="size">The size of the code verifier (43 - 128 charters).</param>
-    public Pkce(uint size = 128)
-    {
-        CodeVerifier = GenerateCodeVerifier(size);
-        CodeChallenge = GenerateCodeChallenge(CodeVerifier);
-    }
+    public Pkce(uint size = 128) => NewCode();
+
+	public void NewCode(uint size = 128)
+	{
+		CodeVerifier = GenerateCodeVerifier(size);
+		CodeChallenge = GenerateCodeChallenge(CodeVerifier);
+	}
 
     /// <summary>
     /// Generates a code_verifier based on rfc-7636.
@@ -156,7 +150,7 @@ public class Pkce
     ///    
     /// Reference: rfc-7636 https://datatracker.ietf.org/doc/html/rfc7636#section-4.1     
     ///</remarks>
-    public static string GenerateCodeVerifier(uint size = 128)
+    private static string GenerateCodeVerifier(uint size = 128)
     {
         if (size < 43 || size > 128)
             size = 128;
@@ -204,7 +198,7 @@ public class Pkce
     /// 
     /// Reference: rfc-7636 https://datatracker.ietf.org/doc/html/rfc7636#section-4.2
     /// </remarks>
-    public static string GenerateCodeChallenge(string codeVerifier)
+    private static string GenerateCodeChallenge(string codeVerifier)
     {
         using (var sha256 = SHA256.Create())
         {

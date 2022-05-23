@@ -133,10 +133,6 @@ namespace tudu
 	[Verb("sync", HelpText = "Sync to selected provider.")]
 	public class SyncAll : ICommand
 	{
-		public void Execute()
-		{
-			Sync.DropBox.OAuth2();
-			Sync.DropBox.r();
-		}
+		public void Execute() => Sync.DropBox.Sync();
 	}
 }
