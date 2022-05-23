@@ -20,7 +20,7 @@ namespace tudu
 				File.Create(Path.Combine(DataLoc, "todo.txt")).Close();
 			YAML.LoadTodoFile();
 
-			Parser.Default.ParseArguments<RemTask, NewTask, TaskInfo, SlashTask, ListTasks>(args)
+			Parser.Default.ParseArguments<RemTask, NewTask, TaskInfo, SlashTask, ListTasks, SyncAll>(args)
 				.WithParsed<ICommand>(t => t.Execute());
 		}
 	}
@@ -127,6 +127,16 @@ namespace tudu
 			task.Name = Name;
 			task.Body = Message;
 			Task.AddTask(task, ParentTask);
+		}
+	}
+	
+	[Verb("sync", HelpText = "Sync to selected provider.")]
+	public class SyncAll : ICommand
+	{
+		public void Execute()
+		{
+			Sync.DropBox.OAuth2();
+			Sync.DropBox.r();
 		}
 	}
 }
