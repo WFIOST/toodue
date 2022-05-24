@@ -1,4 +1,6 @@
-﻿using System.Net;
+﻿using System.Diagnostics;
+using System.Net;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
 using Dropbox.Api;
@@ -85,9 +87,9 @@ public class Sync
 	public static string Authenticate(string authUrl, string tokenUrl, string clientId)
 	{
 		var pkce = new Pkce();
-		string URL =
-			"https://" + authUrl + "?client_id=" + clientId + "&response_type=code&code_challenge=" + pkce.CodeChallenge + "&code_challenge_method=S256";
+		string URL = "https://" + authUrl + "?client_id=" + clientId + "&response_type=code&code_challenge=" + pkce.CodeChallenge + "&code_challenge_method=S256";
 		//TODO: Launch browser automatically and get response automatically.
+		OpenUrl(URL);
 		Console.WriteLine("Please insert the following into your URL: " + URL + "\nAnd insert back the code: ");
 		var AuthToken = Console.ReadLine();
 		//TODO: Make this static.
@@ -103,6 +105,26 @@ public class Sync
 		var response = client.PostAsync(tokenUrl, content).Result;
 		string responseString = response.Content.ReadAsStringAsync().Result;
 		return responseString;
+	}
+	
+	private static void OpenUrl(string url)
+	{
+		try
+		{
+			Process.Start(url);
+		}
+		catch
+		{
+			// hack because of this: https://github.com/dotnet/corefx/issues/10361
+			if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+				Process.Start(new ProcessStartInfo(url.Replace("&", "^&")) { UseShellExecute = true });
+			else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+				Process.Start("xdg-open", url);
+			else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+				Process.Start("open", url);
+			else
+				throw;
+		}
 	}
 }
 
@@ -125,7 +147,7 @@ public class Pkce
     /// Initializes a new instance of the Pkce class.
     /// </summary>
     /// <param name="size">The size of the code verifier (43 - 128 charters).</param>
-    public Pkce(uint size = 128) => NewCode();
+    public Pkce(uint size = 128) => NewCode(size);
 
 	public void NewCode(uint size = 128)
 	{
