@@ -133,6 +133,12 @@ namespace tudu
 	[Verb("sync", HelpText = "Sync to selected provider.")]
 	public class SyncAll : ICommand
 	{
-		public void Execute() => Sync.DropBox.Sync();
+		[Option('f', "force", Required = true, HelpText = "Force a download/upload")]
+		public string? Force { get; set; }
+
+		public void Execute()
+		{
+			Sync.DropBox.Sync(Force);
+		}
 	}
 }

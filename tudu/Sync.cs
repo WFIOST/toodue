@@ -40,8 +40,10 @@ public class Sync
 		public static readonly string AuthURL  = "www.dropbox.com/oauth2/authorize";
 		public static readonly string TokenURL = "https://api.dropboxapi.com/oauth2/token";
 
-		public static void Sync()
+		public static void Sync(string? force = null)
 		{
+			if (force == null)
+				force = "";
 			string tokenResponseJson = Authenticate(AuthURL, TokenURL, ClientID);
 			OAuth2Response? tokenResponse = JsonConvert.DeserializeObject<OAuth2Response>(tokenResponseJson);
 			//hope tokenresponse isnt null
@@ -56,8 +58,9 @@ public class Sync
 				//	I'm pretty sure any newer device will upload because the freshly made todo file is considered newer
 				
 				//If the server version is OLDER than ours
-				if (todoFile == null || DateTime.Compare(todoFile.AsFile.ServerModified, todoFileInfo.LastWriteTime) < 0)
+				if ((todoFile == null || DateTime.Compare(todoFile.AsFile.ServerModified, todoFileInfo.LastWriteTime) < 0 || force == "upload") && force != "download")
 				{
+					//Upload
 					Console.WriteLine("Uploading to server!");
 					using (var mem = new MemoryStream(File.ReadAllBytes(YAML.TODO_FILE)))
 					{
