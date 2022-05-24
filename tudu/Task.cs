@@ -10,7 +10,7 @@ public class Task
 	public string     Name      { get; set; }
 	public string     Body      { get; set; }
 	public bool       IsSlashed { get; set; }
-	public List<Task> SubTasks  { get; set; }
+	public List<Task>?SubTasks  { get; set; }
 	
 	//converts something like "0-10-6-8" to [0, 10, 6, 8]
 	public static int[] StringToIntArray(string str)

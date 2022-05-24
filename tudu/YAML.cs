@@ -12,7 +12,7 @@ public static class YAML
 		.WithNamingConvention(CamelCaseNamingConvention.Instance) 
 		.Build();
 	public static TodoFile TaskList;
-	public static readonly string TODO_FILE = Path.Combine(Path.Combine(Program.DataLoc, "todo.txt"));
+	public static readonly string TODO_FILE = Path.Combine(Path.Combine(Program.DATA_LOCATION, "todo.txt"));
 	
 	public static void LoadTodoFile()
 	{

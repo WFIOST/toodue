@@ -6,18 +6,18 @@ namespace tudu
 {
 	internal class Program
 	{
-		public static string AppName = "toodue";
+		public const string APP_NAME = "toodue";
 
-		public static string DataLoc =
-			Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), AppName);
+		public static readonly string DATA_LOCATION =
+			Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), APP_NAME);
 
-		static void Main(string[] args)
+		public static void Main(string[] args)
 		{
-			Console.WriteLine(DataLoc);
-			if (!Directory.Exists(DataLoc))
-				Directory.CreateDirectory(DataLoc);
-			if (!File.Exists(Path.Combine(DataLoc, "todo.txt")))
-				File.Create(Path.Combine(DataLoc, "todo.txt")).Close();
+			Console.WriteLine(DATA_LOCATION);
+			if (!Directory.Exists(DATA_LOCATION))
+				Directory.CreateDirectory(DATA_LOCATION);
+			if (!File.Exists(Path.Combine(DATA_LOCATION, "todo.txt")))
+				File.Create(Path.Combine(DATA_LOCATION, "todo.txt")).Close();
 			YAML.LoadTodoFile();
 
 			Parser.Default.ParseArguments<RemTask, NewTask, TaskInfo, SlashTask, ListTasks, SyncAll>(args)
@@ -62,13 +62,15 @@ namespace tudu
 		public void Execute()
 		{
 			Task task = Task.GetTask(ID);
-			if(task.IsSlashed)
+			
+			if (task.IsSlashed)
 				Console.WriteLine($"--{task.Name}--");
 			else
 				Console.WriteLine($"  {task.Name}");
+			
 			Console.WriteLine($"\n{task.Body}\n");
 
-			int subcount = (task.SubTasks != null) ? task.SubTasks.Count : 0;
+			int subcount = task.SubTasks?.Count ?? 0;
 			
 			Console.WriteLine($"Task has {subcount} subtasks.");
 		}
@@ -91,10 +93,10 @@ namespace tudu
 			Console.WriteLine(list);
 		}
 
-		public static string? GetSubTaskInfo(Task toptask, string parent, int depth)
+		public static string GetSubTaskInfo(Task toptask, string parent, int depth)
 		{
 			if (toptask.SubTasks == null || toptask.SubTasks.Count == 0) return null;
-			string? str = "";
+			string str = "";
 			for (int i = 0; i < toptask.SubTasks.Count; i++)
 			{
 				string padding = "";
@@ -102,8 +104,8 @@ namespace tudu
 				string s = "";
 				if (toptask.SubTasks[i].IsSlashed) s += "-";
 				str += $"{padding}{parent}-{i}: {toptask.SubTasks[i].Name} {s}\n";
-				string? sti = GetSubTaskInfo(toptask.SubTasks[i], $"{parent}-{i}", depth + 1);
-				if (sti != null) str +=  sti;
+				string sti = GetSubTaskInfo(toptask.SubTasks[i], $"{parent}-{i}", depth + 1);
+				str +=  sti;
 			}
 			return str;
 		}
