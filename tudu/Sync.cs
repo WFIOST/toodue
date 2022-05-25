@@ -19,12 +19,12 @@ public class Sync
 	public static class OneDrive
 	{
 		public static string   AppID     = "24a8a6c0-f6ed-4c6f-84e3-162d411daa8a";
-		public static string[] Scope     = new string[]{"onedrive.readwrite"};
+		public static string[] Scope     = { "onedrive.readwrite" };
 		public static string   ReturnURL = "";
 
 		public static void GetAuth()
 		{
-			var Auth = new MsaAuthenticationProvider(AppID, ReturnURL, Scope);
+			var auth = new MsaAuthenticationProvider(AppID, ReturnURL, Scope);
 		}
 	}
 	
@@ -42,10 +42,8 @@ public class Sync
 		public static readonly string AuthURL  = "www.dropbox.com/oauth2/authorize";
 		public static readonly string TokenURL = "https://api.dropboxapi.com/oauth2/token";
 
-		public static void Sync(string? force = null)
+		public static void Sync(string force = "")
 		{
-			if (force == null)
-				force = "";
 			string tokenResponseJson = Authenticate(AuthURL, TokenURL, ClientID);
 			OAuth2Response? tokenResponse = JsonConvert.DeserializeObject<OAuth2Response>(tokenResponseJson);
 			//hope tokenresponse isnt null
