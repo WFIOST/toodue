@@ -1,7 +1,7 @@
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
 
-namespace tudu;
+namespace toodue;
 
 public static class Serialisation
 {

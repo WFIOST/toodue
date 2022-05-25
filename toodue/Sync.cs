@@ -11,7 +11,7 @@ using Microsoft.OneDrive.Sdk.Authentication;
 using Newtonsoft.Json;
 using File = System.IO.File;
 
-namespace tudu;
+namespace toodue;
 
 public static class Sync
 {

@@ -1,4 +1,4 @@
-﻿namespace tudu;
+﻿namespace toodue;
 
 public class Scheduler
 {
