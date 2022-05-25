@@ -12,7 +12,6 @@ namespace tudu
 			Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), APP_NAME);
 
 		public static TodoFile Todo;
-		public static Sync.DropBox DropBox;
 
 		public static void Main(string[] args)
 		{
@@ -23,7 +22,6 @@ namespace tudu
 				File.Create(Path.Combine(DATA_LOCATION, "todo.txt")).Close();
 			
 			Todo = Serialisation.LoadTodoFile();
-			DropBox = new Sync.DropBox();
 
 			Parser.Default.ParseArguments<RemoveTask, NewTask, TaskInfo, SlashTask, ListTasks, SyncAll>(args)
 				.WithParsed<ICommand>(t => t.Execute());
@@ -148,7 +146,7 @@ namespace tudu
 
 		public void Execute()
 		{
-			Program.DropBox.Sync(Force!);
+			Sync.DropBox.Sync(Force!);
 		}
 	}
 }

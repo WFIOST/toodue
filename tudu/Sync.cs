@@ -13,8 +13,9 @@ using File = System.IO.File;
 
 namespace tudu;
 
-public class Sync
+public static class Sync
 {
+	public static HttpClient Client = new HttpClient();
 	//TODO: Figure this out.
 	public static class OneDrive
 	{
@@ -28,7 +29,7 @@ public class Sync
 		}
 	}
 
-	public class DropBox
+	public static class DropBox
 	{
 		private const string CLIENT_ID = "gqvtt2vmwwox4tk";
 		private const string LOOPBACK = "http://127.0.0.1:52475/";
@@ -36,20 +37,12 @@ public class Sync
 		private const string AUTHENTICATION_URL = "www.dropbox.com/oauth2/authorize";
 		private const string TOKEN_URL = "https://api.dropboxapi.com/oauth2/token";
 
-		private readonly Uri _redirectURI = new Uri($"{LOOPBACK}authorize");
-		private readonly Uri _jsRedirectURI = new Uri($"{LOOPBACK}token");
+		private static readonly Uri _redirectURI = new Uri($"{LOOPBACK}authorize");
+		private static readonly Uri _jsRedirectURI = new Uri($"{LOOPBACK}token");
 		
-		private string _accessToken;
+		private static string _accessToken;
 
-		private HttpClient _client;
-
-		public DropBox()
-		{
-			_accessToken = String.Empty;
-			_client = new HttpClient();
-		}
-
-		public void Sync(string force = "")
+		public static void Sync(string force = "")
 		{
 			string tokenResponseJson = Authenticate();
 			var tokenResponse = JsonConvert.DeserializeObject<OAuth2Response>(tokenResponseJson);
@@ -90,7 +83,7 @@ public class Sync
 			}
 		}
 
-		private string Authenticate()
+		private static string Authenticate()
 		{
 			var pkce = new Pkce();
 			// string url = "https://" + authUrl + "?client_id=" + clientId + "&response_type=code&code_challenge=" + pkce.CodeChallenge + "&code_challenge_method=S256";
@@ -112,7 +105,7 @@ public class Sync
 			var content = new FormUrlEncodedContent(postreq);
 			
 			//TODO: Use async
-			HttpResponseMessage response = _client.PostAsync(TOKEN_URL, content).Result;
+			HttpResponseMessage response = Client.PostAsync(TOKEN_URL, content).Result;
 			string responseString = response.Content.ReadAsStringAsync().Result;
 			return responseString;
 		}
