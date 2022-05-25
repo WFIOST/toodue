@@ -1,34 +1,24 @@
 ﻿namespace tudu;
 
-public class TodoFile
+public struct Task
 {
-	public List<Task> Tasks { get; set; }
+	public string Name { get; set; }
+	public string Body { get; set; }
+	public bool IsSlashed { get; set; }
+	public List<Task> SubTasks { get; set; }
 }
 
-public class Task
+public class TodoFile
 {
-	public string     Name      { get; set; }
-	public string     Body      { get; set; }
-	public bool       IsSlashed { get; set; }
-	public List<Task>?SubTasks  { get; set; }
-	
-	//converts something like "0-10-6-8" to [0, 10, 6, 8]
-	public static int[] StringToIntArray(string str)
-	{
-		string[] stra = str.Split('-');
-		int[] inta = new int[stra.Length];
-		for (int i = 0; i < stra.Length; i++)
-			inta[i] = int.Parse(stra[i]); 
-		return inta;
-	}
-	
-	public static void AddTask(Task item, string? parent = null)
+	public List<Task>? Tasks { get; set; }
+
+	public void AddTask(Task item, string? parent = null)
 	{
 		if (parent != null)
 		{
-			int[] p = StringToIntArray(parent);
-			Task t = YAML.TaskList.Tasks[p[0]];
-			for (int i = 1; i < p.Length; i++)
+			int[] p = parent.ToIntArray();
+			Task t = Tasks![p[0]];
+			for (var i = 1; i < p.Length; i++)
 			{
 				if (p[i] >= t.SubTasks.Count)
 				{
@@ -37,18 +27,18 @@ public class Task
 				}
 				t = t.SubTasks[p[i]];
 			}
-			if (t.SubTasks == null) t.SubTasks = new List<Task>();
+			
 			t.SubTasks.Add(item);
 		}
 		else
-			YAML.TaskList.Tasks.Add(item);
-		YAML.SaveTodoFile();
+			Tasks!.Add(item);
+		Serialisation.SaveTodoFile(this);
 	}
 
-	public static Task GetTask(string pos, bool getParent = false)
+	public Task GetTask(string pos, bool getParent = false)
 	{
-		int[] loc = StringToIntArray(pos);
-		Task t = YAML.TaskList.Tasks[loc[0]];
+		int[] loc = pos.ToIntArray();
+		Task t = Tasks![loc[0]];
 		for (int i = 1; i < loc.Length; i++)
 		{
 			if (getParent && i == loc.Length - 1)
@@ -58,29 +48,29 @@ public class Task
 		return t;
 	}
 
-	public static void SlashTask(string pos)
+	public void SlashTask(string pos)
 	{
 		Task t = GetTask(pos);
 		if (t.IsSlashed)
-			return; 
+			return;
 		t.IsSlashed = true;
-		YAML.SaveTodoFile();
+		Serialisation.SaveTodoFile(this);
 	}
 
-	public static void UnslashTask(string pos)
+	public void UnslashTask(string pos)
 	{
 		Task t = GetTask(pos);
 		if (!t.IsSlashed)
 			return;
 		t.IsSlashed = false;
-		YAML.SaveTodoFile();
+		Serialisation.SaveTodoFile(this);
 	}
 
-	public static void RemoveTask(string pos)
+	public void RemoveTask(string pos)
 	{
-		int index = StringToIntArray(pos)[-1];
+		int index = pos.ToIntArray()[-1];
 		Task t = GetTask(pos, true);
 		t.SubTasks.RemoveAt(index);
-		YAML.SaveTodoFile();
+		Serialisation.SaveTodoFile(this);
 	}
 }

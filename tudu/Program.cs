@@ -11,6 +11,9 @@ namespace tudu
 		public static readonly string DATA_LOCATION =
 			Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), APP_NAME);
 
+		public static TodoFile Todo;
+		public static Sync.DropBox DropBox;
+
 		public static void Main(string[] args)
 		{
 			Console.WriteLine(DATA_LOCATION);
@@ -18,17 +21,19 @@ namespace tudu
 				Directory.CreateDirectory(DATA_LOCATION);
 			if (!File.Exists(Path.Combine(DATA_LOCATION, "todo.txt")))
 				File.Create(Path.Combine(DATA_LOCATION, "todo.txt")).Close();
-			YAML.LoadTodoFile();
+			
+			Todo = Serialisation.LoadTodoFile();
+			DropBox = new Sync.DropBox();
 
-			Parser.Default.ParseArguments<RemTask, NewTask, TaskInfo, SlashTask, ListTasks, SyncAll>(args)
+			Parser.Default.ParseArguments<RemoveTask, NewTask, TaskInfo, SlashTask, ListTasks, SyncAll>(args)
 				.WithParsed<ICommand>(t => t.Execute());
 		}
 	}
 
 	public interface ICommand { void Execute(); }
 
-	[Verb("rem", HelpText = "Remove todo item.")]
-	public class RemTask : ICommand
+	[Verb("remove", HelpText = "Remove todo item.")]
+	public class RemoveTask : ICommand
 	{
 		[Option('i', "id", Required = true, HelpText = "Todo item to slash.")]
 		public string ID { get; set; }
@@ -36,7 +41,7 @@ namespace tudu
 		public void Execute()
 		{
 			Console.WriteLine($"Removing {ID}");
-			Task.RemoveTask(ID);
+			Program.Todo.RemoveTask(ID);
 		}
 	}
 
@@ -49,7 +54,7 @@ namespace tudu
 		public void Execute()
 		{
 			Console.WriteLine($"Slashing {ID}");
-			Task.SlashTask(ID);
+			Program.Todo.SlashTask(ID);
 		}
 	}
 
@@ -61,7 +66,7 @@ namespace tudu
 
 		public void Execute()
 		{
-			Task task = Task.GetTask(ID);
+			Task task = Program.Todo.GetTask(ID);
 			
 			if (task.IsSlashed)
 				Console.WriteLine($"--{task.Name}--");
@@ -82,30 +87,32 @@ namespace tudu
 		public void Execute()
 		{
 			string list = "";
-			for (int i = 0; i < YAML.TaskList.Tasks.Count; i++)
+			for (int i = 0; i < Program.Todo.Tasks?.Count; i++)
 			{
 				char s = ' ';
-				if (YAML.TaskList.Tasks[i].IsSlashed) s = '-';
-				list += $"{i}: {YAML.TaskList.Tasks[i].Name} {s}\n";
-				string? sti = GetSubTaskInfo(YAML.TaskList.Tasks[i], i.ToString(), 1);
-				if (sti != null) list += sti;
+				if (Program.Todo.Tasks[i].IsSlashed) s = '-';
+				list += $"{i}: {Program.Todo.Tasks[i].Name} {s}\n";
+				string sti = GetSubTaskInfo(Program.Todo.Tasks[i], i.ToString(), 1);
+				list += sti;
 			}
 			Console.WriteLine(list);
 		}
 
 		public static string GetSubTaskInfo(Task toptask, string parent, int depth)
 		{
-			if (toptask.SubTasks == null || toptask.SubTasks.Count == 0) return null;
-			string str = "";
+			if (toptask.SubTasks == null || toptask.SubTasks.Count == 0) return String.Empty;
+			var str = String.Empty;
 			for (int i = 0; i < toptask.SubTasks.Count; i++)
 			{
-				string padding = "";
+				var padding = String.Empty;
+				var s = String.Empty;
+				
 				for (int x = 0; x < depth; x++) padding += "   ";
-				string s = "";
+				
 				if (toptask.SubTasks[i].IsSlashed) s += "-";
 				str += $"{padding}{parent}-{i}: {toptask.SubTasks[i].Name} {s}\n";
 				string sti = GetSubTaskInfo(toptask.SubTasks[i], $"{parent}-{i}", depth + 1);
-				str +=  sti;
+				str += sti;
 			}
 			return str;
 		}
@@ -125,10 +132,11 @@ namespace tudu
 
 		public void Execute()
 		{
-			var task = new Task();
-			task.Name = Name;
-			task.Body = Message;
-			Task.AddTask(task, ParentTask);
+			Program.Todo.AddTask(new Task 
+			{
+				Name = Name,
+				Body = Message
+			}, ParentTask);
 		}
 	}
 	
@@ -140,7 +148,7 @@ namespace tudu
 
 		public void Execute()
 		{
-			Sync.DropBox.Sync(Force);
+			Program.DropBox.Sync(Force!);
 		}
 	}
 }

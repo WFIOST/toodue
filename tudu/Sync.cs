@@ -27,32 +27,39 @@ public class Sync
 			var auth = new MsaAuthenticationProvider(AppID, ReturnURL, Scope);
 		}
 	}
-	
-	//High props to Dropbox. Their docs on the API is absolute top notch, unlike a certain singular drive.
-	public static class DropBox
+
+	public class DropBox
 	{
-		public static          string AccessToken = "";
-		public static readonly string ClientID      = "gqvtt2vmwwox4tk";
-		//TODO: smthn about ensuring this port is open.
-		public static readonly string Loopback = "http://127.0.0.1:52475/";
+		private const string CLIENT_ID = "gqvtt2vmwwox4tk";
+		private const string LOOPBACK = "http://127.0.0.1:52475/";
+
+		private const string AUTHENTICATION_URL = "www.dropbox.com/oauth2/authorize";
+		private const string TOKEN_URL = "https://api.dropboxapi.com/oauth2/token";
+
+		private readonly Uri _redirectURI = new Uri($"{LOOPBACK}authorize");
+		private readonly Uri _jsRedirectURI = new Uri($"{LOOPBACK}token");
 		
-		public static readonly Uri RedirectURI = new Uri(Loopback + "authorize");
-		public static readonly Uri JSRedirectURI = new Uri(Loopback + "token");
+		private string _accessToken;
 
-		public static readonly string AuthURL  = "www.dropbox.com/oauth2/authorize";
-		public static readonly string TokenURL = "https://api.dropboxapi.com/oauth2/token";
+		private HttpClient _client;
 
-		public static void Sync(string force = "")
+		public DropBox()
 		{
-			string tokenResponseJson = Authenticate(AuthURL, TokenURL, ClientID);
-			OAuth2Response? tokenResponse = JsonConvert.DeserializeObject<OAuth2Response>(tokenResponseJson);
-			//hope tokenresponse isnt null
-			AccessToken = tokenResponse.access_token;
-			using (var dbx = new DropboxClient(AccessToken))
+			_accessToken = String.Empty;
+			_client = new HttpClient();
+		}
+
+		public void Sync(string force = "")
+		{
+			string tokenResponseJson = Authenticate();
+			var tokenResponse = JsonConvert.DeserializeObject<OAuth2Response>(tokenResponseJson);
+
+			_accessToken = tokenResponse.access_token;
+			using (var dbx = new DropboxClient(_accessToken))
 			{
-				var list = dbx.Files.ListFolderAsync(string.Empty).Result;
-				Metadata? todoFile = list.Entries.FirstOrDefault(i => i.Name == "todo.txt"); //Server todo.txt
-				FileInfo todoFileInfo = new FileInfo(YAML.TODO_FILE); //Client todo.txt
+				ListFolderResult list = dbx.Files.ListFolderAsync(string.Empty).Result;
+				Metadata? todoFile = list.Entries.FirstOrDefault(i => i.Name == "todo.txt"); //Server-todo.txt
+				var todoFileInfo = new FileInfo(Serialisation.TODO_FILE); //Client-todo.txt
 				
 				//TODO: PLEASE don't do this. Try to figure out a logging and desync fixer system.
 				//	I'm pretty sure any newer device will upload because the freshly made todo file is considered newer
@@ -62,7 +69,7 @@ public class Sync
 				{
 					//Upload
 					Console.WriteLine("Uploading to server!");
-					using (var mem = new MemoryStream(File.ReadAllBytes(YAML.TODO_FILE)))
+					using (var mem = new MemoryStream(File.ReadAllBytes(Serialisation.TODO_FILE)))
 					{
 						dbx.Files.UploadAsync("/todo.txt", WriteMode.Overwrite.Instance, body: mem);
 					}
@@ -73,56 +80,44 @@ public class Sync
 					using (var response = dbx.Files.DownloadAsync("/todo.txt"))
 					{
 						response.Wait();
-						var downloadResult = response.Result.GetContentAsByteArrayAsync().Result;
-						File.WriteAllBytes(YAML.TODO_FILE, downloadResult);
+						byte[]? downloadResult = response.Result.GetContentAsByteArrayAsync().Result;
+						if (downloadResult == null)
+							throw new Exception($"Could not download file!\n{response.Exception?.Message}");
+						
+						File.WriteAllBytes(Serialisation.TODO_FILE, downloadResult);
 					}
 				}
 			}
 		}
-	}
-	
-	//TODO: support reauthorizing token.
-	public static string Authenticate(string authUrl, string tokenUrl, string clientId)
-	{
-		var pkce = new Pkce();
-		string URL = "https://" + authUrl + "?client_id=" + clientId + "&response_type=code&code_challenge=" + pkce.CodeChallenge + "&code_challenge_method=S256";
-		//TODO: Launch browser automatically and get response automatically.
-		OpenUrl(URL);
-		Console.WriteLine("Please insert the following into your URL: " + URL + "\nAnd insert back the code: ");
-		var AuthToken = Console.ReadLine();
-		//TODO: Make this static.
-		HttpClient client = new HttpClient();
-		var postreq = new Dictionary<string, string>()
+
+		private string Authenticate()
 		{
-			{ "code", AuthToken },
-			{ "grant_type", "authorization_code" },
-			{ "code_verifier", pkce.CodeVerifier },
-			{ "client_id", clientId },
-		};
-		var content = new FormUrlEncodedContent(postreq);
-		var response = client.PostAsync(tokenUrl, content).Result;
-		string responseString = response.Content.ReadAsStringAsync().Result;
-		return responseString;
-	}
-	
-	private static void OpenUrl(string url)
-	{
-		try
-		{
-			Process.Start(url);
+			var pkce = new Pkce();
+			// string url = "https://" + authUrl + "?client_id=" + clientId + "&response_type=code&code_challenge=" + pkce.CodeChallenge + "&code_challenge_method=S256";
+			string url = $"https://{AUTHENTICATION_URL}?client_id={CLIENT_ID}&response_type=code&code_challenge={pkce.CodeChallenge}";
+			//TODO: Launch browser automatically and get response automatically.
+			Common.OpenURL(url);
+			Console.WriteLine("Please insert the following into your URL: " + url + "\nAnd insert back the code: ");
+			
+			string? auth = Console.ReadLine();
+			if (auth == null) throw new Exception("You must input in your AUTH token!");
+			
+			var postreq = new Dictionary<string, string>()
+			{
+				{ "code",			auth },
+				{ "grant_type",		"authorization_code" },
+				{ "code_verifier",	pkce.CodeVerifier },
+				{ "client_id",		CLIENT_ID },
+			};
+			var content = new FormUrlEncodedContent(postreq);
+			
+			//TODO: Use async
+			HttpResponseMessage response = _client.PostAsync(TOKEN_URL, content).Result;
+			string responseString = response.Content.ReadAsStringAsync().Result;
+			return responseString;
 		}
-		catch
-		{
-			// hack because of this: https://github.com/dotnet/corefx/issues/10361
-			if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-				Process.Start(new ProcessStartInfo(url.Replace("&", "^&")) { UseShellExecute = true });
-			else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-				Process.Start("xdg-open", url);
-			else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-				Process.Start("open", url);
-			else
-				throw;
-		}
+		
+		
 	}
 }
 
@@ -231,7 +226,7 @@ public class Pkce
     }
 }
 
-public class OAuth2Response
+public struct OAuth2Response
 {
 	public string access_token { get; set; }
 	public string token_type   { get; set; }
