@@ -17,7 +17,7 @@
 
     <ItemGroup>
       <PackageReference Include="CommandLineParser" Version="2.9.1" />
-      <PackageReference Include="Dropbox.Api" Version="6.28.0" />
+      <PackageReference Include="Dropbox.Api" Version="6.29.0" />
       <PackageReference Include="Microsoft.IdentityModel.Tokens" Version="6.18.0" />
       <PackageReference Include="Microsoft.OneDriveSDK" Version="2.0.7" />
       <PackageReference Include="Microsoft.OneDriveSDK.Authentication" Version="1.0.10" />
