@@ -1,16 +1,66 @@
 ﻿namespace toodue;
 
-public struct Task
+public class Task
 {
-	public string Name { get; set; }
-	public string Body { get; set; }
-	public bool IsSlashed { get; set; }
-	public List<Task> SubTasks { get; set; }
+	public string     Name      { get; set; }
+	public string     Body      { get; set; }
+	public bool       IsSlashed { get; set; }
+	public List<Task> SubTasks  { get; set; }
+	
+	[YamlDotNet.Serialization.YamlIgnore]
+	public string     NameMD    => IsSlashed ? $"~~{Name}~~" : Name;
+	[YamlDotNet.Serialization.YamlIgnore]
+	public string ID { get; set; }
+
+	public Task AddEmptySubtask(string name = "New Task")
+	{
+		Task t = new Task();
+		t.Name = name;
+		if (SubTasks == null)
+			SubTasks = new List<Task>();
+		SubTasks.Add(t);
+		return t;
+	}
 }
 
 public class TodoFile
 {
 	public List<Task>? Tasks { get; set; }
+
+	public string Tree()
+	{
+		string list = "";
+		for (int i = 0; i < Tasks?.Count; i++)
+		{
+			char s = ' ';
+			if (Tasks[i].IsSlashed) s = '-';
+			list += $"{i}: {Tasks[i].Name} {s}\n";
+			Tasks[i].ID = i.ToString();
+			string sti = GetSubTaskInfo(Tasks[i], i.ToString(), 1);
+			list += sti;
+		}
+		return list;
+	}
+	
+	public static string GetSubTaskInfo(Task toptask, string parent, int depth)
+	{
+		if (toptask.SubTasks == null || toptask.SubTasks.Count == 0) return String.Empty;
+		var str = String.Empty;
+		for (int i = 0; i < toptask.SubTasks.Count; i++)
+		{
+			var padding = String.Empty;
+			var s = String.Empty;
+
+			for (int x = 0; x < depth; x++) padding += "   ";
+
+			if (toptask.SubTasks[i].IsSlashed) s += "-";
+			str += $"{padding}{parent}-{i}: {toptask.SubTasks[i].Name} {s}\n";
+			toptask.SubTasks[i].ID = $"{parent}-{i}";
+			string sti = GetSubTaskInfo(toptask.SubTasks[i], $"{parent}-{i}", depth + 1);
+			str += sti;
+		}
+		return str;
+	}
 
 	public void AddTask(Task item, string? parent = null)
 	{
@@ -27,7 +77,9 @@ public class TodoFile
 				}
 				t = t.SubTasks[p[i]];
 			}
-			
+
+			if (t.SubTasks == null)
+				t.SubTasks = new List<Task>();
 			t.SubTasks.Add(item);
 		}
 		else

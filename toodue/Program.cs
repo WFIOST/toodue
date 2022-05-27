@@ -85,40 +85,7 @@ public class TaskInfo : ICommand
 [Verb("list", HelpText = "Lists all tasks.")]
 public class ListTasks : ICommand
 {
-	public void Execute()
-	{
-		string list = "";
-		for (int i = 0; i < Program.Todo.Tasks?.Count; i++)
-		{
-			char s = ' ';
-			if (Program.Todo.Tasks[i].IsSlashed) s = '-';
-			list += $"{i}: {Program.Todo.Tasks[i].Name} {s}\n";
-			string sti = GetSubTaskInfo(Program.Todo.Tasks[i], i.ToString(), 1);
-			list += sti;
-		}
-
-		Console.WriteLine(list);
-	}
-
-	public static string GetSubTaskInfo(Task toptask, string parent, int depth)
-	{
-		if (toptask.SubTasks == null || toptask.SubTasks.Count == 0) return String.Empty;
-		var str = String.Empty;
-		for (int i = 0; i < toptask.SubTasks.Count; i++)
-		{
-			var padding = String.Empty;
-			var s = String.Empty;
-
-			for (int x = 0; x < depth; x++) padding += "   ";
-
-			if (toptask.SubTasks[i].IsSlashed) s += "-";
-			str += $"{padding}{parent}-{i}: {toptask.SubTasks[i].Name} {s}\n";
-			string sti = GetSubTaskInfo(toptask.SubTasks[i], $"{parent}-{i}", depth + 1);
-			str += sti;
-		}
-
-		return str;
-	}
+	public void Execute() => Console.WriteLine(Program.Todo.Tree());
 }
 
 [Verb("new", HelpText = "Create new todo item.")]

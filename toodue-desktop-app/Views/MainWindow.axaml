@@ -3,6 +3,7 @@
         xmlns:vm="using:toodue_desktop_app.ViewModels"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:md="clr-namespace:Markdown.Avalonia;assembly=Markdown.Avalonia"
         mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
         x:Class="toodue_desktop_app.Views.MainWindow"
         Icon="/Assets/avalonia-logo.ico"
@@ -25,16 +26,32 @@
                     MaterialOpacity="0.65" />
             </ExperimentalAcrylicBorder.Material>
         </ExperimentalAcrylicBorder>
-        <TreeView Items="{Binding Items}" 
-                  Width="400" Height="480" 
-                  HorizontalAlignment="Left">
-        <TreeView.ItemTemplate>
-            <TreeDataTemplate ItemsSource="{Binding Subfolders}">
-                <TextBlock Text="{Binding strNodeText}"/>
-            </TreeDataTemplate>
-        </TreeView.ItemTemplate>
-        </TreeView>
-        <TextBlock Text="{Binding Greeting}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+        <Grid ColumnDefinitions="Auto, Auto" RowDefinitions="Auto">
+        <Grid ColumnDefinitions="400" RowDefinitions="Auto,Auto"  Margin="5">
+            <Button HorizontalAlignment="Left" Width="100" Height="30" Command="{Binding NewRootTask}" Padding="5">New Task</Button>
+            <TreeView Grid.Row = "1" Items="{Binding TaskList}" 
+                      SelectionChanged="TreeView_OnSelectionChanged"
+                      SelectedItems="{Binding TaskListSelectedItems}"
+                      SelectionMode="Single"
+                      Width="400" Height="480" 
+                      HorizontalAlignment="Left"
+                      VerticalAlignment="Top">
+            <TreeView.ItemTemplate>
+                <TreeDataTemplate ItemsSource="{Binding Subt}">
+                    <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto,Auto"  Margin="0">
+                        <md:MarkdownScrollViewer Markdown="{Binding Task.NameMD}" Grid.Row="0" Grid.Column="0"/>
+                        <Button Grid.Column="1" HorizontalAlignment="Right" Width="100" Height="30" Command="{Binding AddEmptySubtask}">New Task</Button>
+                    </Grid>
+                </TreeDataTemplate>
+            </TreeView.ItemTemplate>
+            </TreeView>
+        </Grid>
+        
+            <Grid Grid.Column="1" ColumnDefinitions="Auto" RowDefinitions="Auto,Auto"  Margin="5">
+                <TextBox Watermark="Task name..." Width="700" BorderBrush="Transparent" Background="Transparent" KeyUp="SetTaskName"/>
+                <TextBox Grid.Row="1" AcceptsReturn="True" TextWrapping="Wrap" Watermark="Task body..." Width="700" Height="600" BorderBrush="Transparent" Background="Transparent"/>
+            </Grid>
+        </Grid>
     </Panel>
 
 </Window>
