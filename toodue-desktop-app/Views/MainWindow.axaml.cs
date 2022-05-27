@@ -14,16 +14,11 @@ namespace toodue_desktop_app.Views
 			InitializeComponent();
 		}
 
-		private MainWindowViewModel.ObservableTask t;
-		private void SetTaskName(object? sender, KeyEventArgs e)
-		{
-			Debug.WriteLine("Hallo!");
-			t.Task.Name = (sender as TextBox).Text;
-		}
-		
 		private void TreeView_OnSelectionChanged(object? sender, SelectionChangedEventArgs e)
 		{
-			t = (e.AddedItems[0] as MainWindowViewModel.ObservableTask);
+			var t = MainWindowViewModel.SelectedTask = (e.AddedItems[0] as MainWindowViewModel.ObservableTask);
+			MainWindowViewModel.mwvm.NameEditor = t.Task.Name;
+			MainWindowViewModel.mwvm.BodyEditor = t.Task.Body;
 		}
 	}
 }

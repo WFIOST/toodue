@@ -48,10 +48,9 @@
         </Grid>
         
             <Grid Grid.Column="1" ColumnDefinitions="Auto" RowDefinitions="Auto,Auto"  Margin="5">
-                <TextBox Watermark="Task name..." Width="700" BorderBrush="Transparent" Background="Transparent" KeyUp="SetTaskName"/>
-                <TextBox Grid.Row="1" AcceptsReturn="True" TextWrapping="Wrap" Watermark="Task body..." Width="700" Height="600" BorderBrush="Transparent" Background="Transparent"/>
+                <TextBox Watermark="Task name..." Width="700" BorderBrush="Transparent" Background="Transparent" Text="{Binding NameEditor, Mode=TwoWay}"/>
+                <TextBox Grid.Row="1" AcceptsReturn="True" TextWrapping="Wrap" Watermark="Task body..." Width="700" Height="600" BorderBrush="Transparent" Background="Transparent" Text="{Binding BodyEditor, Mode=TwoWay}"/>
             </Grid>
         </Grid>
     </Panel>
-
 </Window>
